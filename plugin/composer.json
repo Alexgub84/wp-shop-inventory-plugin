@@ -1,0 +1,35 @@
+{
+    "name": "wsi/wp-shop-inventory",
+    "description": "WooCommerce Shop Inventory REST API plugin",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "WSI\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "WSI\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "@test:unit",
+        "test:unit": "phpunit --testsuite unit",
+        "test:integration": "phpunit --testsuite integration",
+        "test:run": [
+            "@test:unit"
+        ]
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "require-dev": {
+        "brain/monkey": "2.7.0",
+        "mockery/mockery": "1.6.12",
+        "phpunit/phpunit": "13.0.5"
+    }
+}

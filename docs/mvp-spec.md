@@ -124,14 +124,14 @@ wp-shop-inventory-plugin/
 | # | Component | Task | Status |
 |---|-----------|------|--------|
 | 1 | Docs | Create all project docs (spec, architecture, rules) | Done |
-| 2 | Plugin | Scaffold (bootstrap, composer.json, .gitignore, uninstall.php) | Not started |
-| 3 | Plugin | Activator: generate auth token on activation | Not started |
-| 4 | Plugin | TokenAuth: validate Bearer token (permission_callback) | Not started |
-| 5 | Plugin | HealthController: GET /wsi/v1/health | Not started |
-| 6 | Plugin | ProductService: wrap wc_get_products(), product creation | Not started |
-| 7 | Plugin | ProductsController: GET /products | Not started |
-| 8 | Plugin | ProductsController: POST /products | Not started |
-| 9 | Plugin | Unit tests for all plugin classes | Not started |
+| 2 | Plugin | Scaffold (bootstrap, composer.json, .gitignore, uninstall.php) | Done |
+| 3 | Plugin | Activator: generate auth token on activation | Done |
+| 4 | Plugin | TokenAuth: validate Bearer token (permission_callback) | Done |
+| 5 | Plugin | HealthController: GET /wsi/v1/health | Done |
+| 6 | Plugin | ProductService: wrap wc_get_products(), product creation | Done |
+| 7 | Plugin | ProductsController: GET /products | Done |
+| 8 | Plugin | ProductsController: POST /products | Done |
+| 9 | Plugin | Unit tests for all plugin classes | Done |
 | 10 | Router | Scaffold (package.json, tsconfig, vitest, .env.example) | Done |
 | 11 | Router | Core modules (config, logger, errors) | Done |
 | 12 | Router | SQLite setup: single-row config (phone, shop_url, token) | Done |

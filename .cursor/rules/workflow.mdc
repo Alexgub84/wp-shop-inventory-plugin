@@ -5,8 +5,14 @@ alwaysApply: true
 
 # Workspace Scope
 
-This is the WooCommerce Shop Inventory Plugin repo (wp-shop-inventory-plugin).
-Only modify files inside this repo. Never modify files in other repos.
+This is a monorepo with three components:
+
+- `plugin/` — WordPress/WooCommerce plugin (PHP). Packaged and uploaded to WP plugin store.
+- `router/` — Central Node.js service. Deployed to Railway/cloud.
+- `e2e/` — End-to-end tests that spin up both components via Docker.
+- `docs/` — Shared documentation (architecture, specs, rules).
+
+When working on a task, stay within the relevant component folder. Only modify files in other folders if the task explicitly requires it (e.g., updating shared docs after a feature is done).
 
 # How to Start Every Task
 
@@ -28,6 +34,22 @@ When you fix a bug, learn something new, or change workflow:
 - If specs changed (features done, new endpoints), update docs/full-project-spec.md
 - If architecture changed, update docs/architecture.md
 - If testing patterns changed, update docs/testing-strategy.md
+
+# Monorepo Structure
+
+```
+wp-shop-inventory-plugin/
+├── docs/                    # Shared documentation
+├── plugin/                  # WordPress plugin (PHP, Composer, PSR-4)
+│   ├── src/
+│   └── tests/               # Plugin-only unit + integration tests
+├── router/                  # Node.js service (TypeScript, Fastify)
+│   ├── src/
+│   └── tests/               # Router-only unit + integration tests
+├── e2e/                     # System tests (both components via Docker)
+│   └── docker-compose.yml
+└── .cursor/rules/           # Shared Cursor rules
+```
 
 # Quick Reference
 

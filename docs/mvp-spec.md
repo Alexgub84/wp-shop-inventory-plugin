@@ -32,23 +32,41 @@ wp-shop-inventory-plugin/
 │       ├── Unit/
 │       └── Integration/
 │
-├── router/                           # Node.js router service
+├── router/                           # Node.js router service (TypeScript)
 │   ├── package.json
+│   ├── tsconfig.json
+│   ├── vitest.config.ts
 │   ├── .env.example                  # Environment template
 │   ├── src/
-│   │   ├── index.js                  # Entry point: Express server, webhook listener
-│   │   ├── config.js                 # Load env vars, validate required config
-│   │   ├── greenApi.js               # Green API client (send messages, receive webhooks)
-│   │   ├── commands.js               # Command handler: parse input, route to action
-│   │   ├── actions/
-│   │   │   ├── listProducts.js       # Fetch products from plugin, format for WhatsApp
-│   │   │   └── addProduct.js         # Multi-step product creation flow
-│   │   ├── pluginClient.js           # HTTP client for plugin REST API (axios)
-│   │   ├── formatter.js              # Format data into WhatsApp-friendly text
-│   │   ├── db.js                     # SQLite setup and queries
-│   │   └── session.js                # In-memory conversation state (for multi-step flows)
+│   │   ├── index.ts                  # Entry point: loads dotenv, starts Fastify server
+│   │   ├── app.ts                    # DI wiring: creates all deps, returns { server, deps }
+│   │   ├── config.ts                 # Zod-validated config from env vars
+│   │   ├── logger.ts                 # Pino logger + createNoopLogger() for DI
+│   │   ├── errors.ts                 # Custom error classes (ConfigError, PluginApiError, etc.)
+│   │   ├── server.ts                 # Fastify with GET /health and POST /webhook
+│   │   ├── formatter.ts              # Pure functions: format products, menu, prompts
+│   │   ├── db.ts                     # SQLite setup, config table, seed from env
+│   │   ├── greenapi/
+│   │   │   └── sender.ts            # GreenApiSender interface, real + mock implementations
+│   │   ├── webhook/
+│   │   │   ├── handler.ts           # Parse payload, route to command handler, send response
+│   │   │   └── types.ts             # Zod schema for Green API webhook payload
+│   │   ├── plugin/
+│   │   │   ├── client.ts            # PluginClient: fetch with Bearer auth (injectable fetch)
+│   │   │   └── types.ts             # Product, CreateProductInput, PluginClient interface
+│   │   ├── commands/
+│   │   │   ├── handler.ts           # CommandHandler: routes input to actions
+│   │   │   ├── listProducts.ts      # Fetch products from plugin, format for WhatsApp
+│   │   │   └── addProduct.ts        # Multi-step product creation (name → price → stock)
+│   │   └── session/
+│   │       ├── manager.ts           # In-memory session Map with expiry
+│   │       └── types.ts             # Session, AddProductStep, SessionManager interface
 │   └── tests/
-│       └── unit/
+│       ├── mocks/
+│       │   ├── greenapi.ts          # Mock sender, logger, payload factories
+│       │   └── plugin.ts            # Mock plugin client, product factory
+│       ├── unit/                     # Unit tests (mocked deps)
+│       └── e2e/                      # E2E tests (Fastify inject)
 │
 ├── docs/                             # Shared project documentation
 │   ├── full-project-spec.md
@@ -114,15 +132,18 @@ wp-shop-inventory-plugin/
 | 7 | Plugin | ProductsController: GET /products | Not started |
 | 8 | Plugin | ProductsController: POST /products | Not started |
 | 9 | Plugin | Unit tests for all plugin classes | Not started |
-| 10 | Router | Scaffold (package.json, .env.example, entry point) | Not started |
-| 11 | Router | SQLite setup: single-row config (phone, shop_url, token) | Not started |
-| 12 | Router | Green API client (send message, receive webhook) | Not started |
-| 13 | Router | Command handler: parse menu input, route to actions | Not started |
-| 14 | Router | List products action (call plugin, format, send) | Not started |
-| 15 | Router | Add product action (multi-step conversation flow) | Not started |
-| 16 | Router | Formatter: product data → WhatsApp text | Not started |
-| 17 | Router | Plugin HTTP client (axios, Bearer auth) | Not started |
-| 18 | Router | Unit tests for commands, formatter, plugin client | Not started |
+| 10 | Router | Scaffold (package.json, tsconfig, vitest, .env.example) | Done |
+| 11 | Router | Core modules (config, logger, errors) | Done |
+| 12 | Router | SQLite setup: single-row config (phone, shop_url, token) | Done |
+| 13 | Router | Green API client (send message, mock sender) | Done |
+| 14 | Router | Webhook handler (parse payload, route to commands) | Done |
+| 15 | Router | Plugin HTTP client (native fetch, Bearer auth) | Done |
+| 16 | Router | Session manager (in-memory with expiry) | Done |
+| 17 | Router | Formatter (product list, menu, prompts) | Done |
+| 18 | Router | Command handler + list/add product actions | Done |
+| 19 | Router | Server (Fastify) + App (DI wiring) + Entry point | Done |
+| 20 | Router | Unit tests (config, commands, formatter, plugin-client, session, webhook) | Done |
+| 21 | Router | E2E tests (full Fastify inject flow) | Done |
 
 ---
 
@@ -311,12 +332,15 @@ The router inserts these into the `config` table on startup if empty. All subseq
 | Layer | Technology |
 |-------|------------|
 | Runtime | Node.js 20+ |
-| Framework | Express.js |
-| HTTP client | axios |
+| Language | TypeScript (ES modules) |
+| Framework | Fastify 5.x |
+| HTTP client | Native fetch (injectable for testing) |
 | Database | SQLite (via better-sqlite3) |
+| Config validation | Zod |
+| Logging | Pino (structured, with noop logger for DI) |
 | Environment | dotenv |
-| Testing | Jest |
-| Linting | ESLint |
+| Testing | Vitest |
+| Linting | TypeScript strict mode (`tsc --noEmit`) |
 
 ---
 

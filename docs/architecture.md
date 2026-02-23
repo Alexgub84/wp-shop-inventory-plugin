@@ -178,23 +178,39 @@ wp-shop-inventory-plugin/
 │       ├── Unit/
 │       └── Integration/
 │
-├── router/                           # Node.js router (JavaScript)
+├── router/                           # Node.js router (TypeScript)
 │   ├── package.json
+│   ├── tsconfig.json
+│   ├── vitest.config.ts
 │   ├── .env.example
 │   ├── src/
-│   │   ├── index.js
-│   │   ├── config.js
-│   │   ├── greenApi.js
-│   │   ├── commands.js
-│   │   ├── actions/
-│   │   │   ├── listProducts.js
-│   │   │   └── addProduct.js
-│   │   ├── pluginClient.js
-│   │   ├── formatter.js
-│   │   ├── db.js
-│   │   └── session.js
+│   │   ├── index.ts                  # Entry point
+│   │   ├── app.ts                    # DI wiring
+│   │   ├── config.ts                 # Zod-validated config
+│   │   ├── logger.ts                 # Pino + noop logger
+│   │   ├── errors.ts                 # Custom error classes
+│   │   ├── server.ts                 # Fastify routes
+│   │   ├── formatter.ts              # Pure formatting functions
+│   │   ├── db.ts                     # SQLite config table
+│   │   ├── greenapi/
+│   │   │   └── sender.ts            # GreenApiSender (real + mock)
+│   │   ├── webhook/
+│   │   │   ├── handler.ts           # Webhook processing
+│   │   │   └── types.ts             # Zod payload schema
+│   │   ├── plugin/
+│   │   │   ├── client.ts            # PluginClient (fetch + Bearer)
+│   │   │   └── types.ts             # Plugin API types
+│   │   ├── commands/
+│   │   │   ├── handler.ts           # Command router
+│   │   │   ├── listProducts.ts
+│   │   │   └── addProduct.ts
+│   │   └── session/
+│   │       ├── manager.ts           # In-memory session Map
+│   │       └── types.ts
 │   └── tests/
-│       └── unit/
+│       ├── mocks/                    # Fake services for testing
+│       ├── unit/
+│       └── e2e/
 │
 ├── docs/
 └── .cursor/

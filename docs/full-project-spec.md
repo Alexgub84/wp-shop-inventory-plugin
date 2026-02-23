@@ -54,15 +54,20 @@ See [architecture.md](architecture.md) for full system diagrams, message flows, 
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Scaffold (package.json, entry point, config) | Not started | |
-| SQLite DB setup (single-row config) | Not started | MVP |
-| Green API client (send/receive) | Not started | |
-| Command handler (menu-based, no AI) | Not started | MVP |
-| List products action | Not started | MVP |
-| Add product action (multi-step) | Not started | MVP |
-| Formatter (data → WhatsApp text) | Not started | |
-| Plugin HTTP client (axios + Bearer) | Not started | |
-| Unit tests | Not started | |
+| Scaffold (package.json, tsconfig, vitest, dotenv) | Done | TypeScript + Fastify + Vitest |
+| Core modules (config, logger, errors) | Done | Zod validation, Pino logging |
+| SQLite DB setup (single-row config) | Done | MVP |
+| Green API client (send message, mock sender) | Done | |
+| Webhook handler (parse payload, route to commands) | Done | Zod schema validation |
+| Plugin HTTP client (native fetch + Bearer) | Done | Injectable fetch for testing |
+| Session manager (in-memory with expiry) | Done | |
+| Formatter (data → WhatsApp text) | Done | Pure functions |
+| Command handler (menu-based, no AI) | Done | MVP |
+| List products action | Done | MVP |
+| Add product action (multi-step) | Done | MVP |
+| Server (Fastify) + App (DI wiring) | Done | Factory-function DI pattern |
+| Unit tests (70 tests) | Done | Fake services via mocks/ |
+| E2E tests (8 tests) | Done | Fastify inject |
 | AI-powered conversation | Not started | Post-MVP |
 | Multi-user phone registry | Not started | Post-MVP |
 | Phone verification flow | Not started | Post-MVP |
@@ -171,12 +176,15 @@ Error: `WP_Error` with appropriate HTTP status code.
 | Layer | Technology |
 |-------|------------|
 | Runtime | Node.js 20+ |
-| Framework | Express.js |
-| HTTP client | axios |
+| Language | TypeScript (ES modules) |
+| Framework | Fastify 5.x |
+| HTTP client | Native fetch (injectable for testing) |
 | Database | SQLite (via better-sqlite3) |
+| Config validation | Zod |
+| Logging | Pino (structured, with noop logger for DI) |
 | Environment | dotenv |
-| Testing | Jest |
-| Linting | ESLint |
+| Testing | Vitest |
+| Linting | TypeScript strict mode (`tsc --noEmit`) |
 
 ---
 

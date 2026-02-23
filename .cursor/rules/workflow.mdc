@@ -1,0 +1,41 @@
+---
+description: Workspace rules - docs folder is source of truth for all rules and documentation
+alwaysApply: true
+---
+
+# Workspace Scope
+
+This is the WooCommerce Shop Inventory Plugin repo (wp-shop-inventory-plugin).
+Only modify files inside this repo. Never modify files in other repos.
+
+# How to Start Every Task
+
+Before writing any code, FIRST use the Read tool on ALL of these files:
+
+1. docs/full-project-spec.md (product requirements, entities, API endpoints, implementation status)
+2. docs/architecture.md (system architecture, decisions, security checklist)
+3. docs/workflow-rules.md (git workflow, planning, code standards, security, testing rules)
+4. docs/dev-lessons.md (past bugs - check before debugging)
+
+Read the docs FIRST, then explore the specific files in this repo that are relevant to the task.
+Do NOT scan the entire codebase upfront - only look at files directly related to the work.
+
+# Updating Documentation
+
+When you fix a bug, learn something new, or change workflow:
+- Update docs/dev-lessons.md with the lesson
+- If the fix implies a new rule, propose adding it to docs/workflow-rules.md
+- If specs changed (features done, new endpoints), update docs/full-project-spec.md
+- If architecture changed, update docs/architecture.md
+- If testing patterns changed, update docs/testing-strategy.md
+
+# Quick Reference
+
+All detailed rules live in the docs/ folder:
+
+- **docs/full-project-spec.md** — complete product spec, entities, API endpoints, file structure, stack
+- **docs/mvp-spec.md** — MVP scope, simplified decisions, implementation checklist
+- **docs/architecture.md** — system architecture, component responsibilities, message flows, all 6 decisions, security checklist
+- **docs/workflow-rules.md** — issue-driven dev, git workflow, commit conventions, PHP/WordPress coding standards, security rules, finalization checklist
+- **docs/testing-strategy.md** — three-tier testing (unit, integration, E2E), patterns, mock factories, test commands
+- **docs/dev-lessons.md** — bug/lesson log, updated after every fix

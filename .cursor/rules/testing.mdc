@@ -1,0 +1,32 @@
+---
+description: Testing rules - see docs/testing-strategy.md for full patterns
+globs: tests/**/*.php, phpunit.xml
+alwaysApply: false
+---
+
+# Testing Rules
+
+Full testing strategy, patterns, and examples are in docs/testing-strategy.md.
+Read that file before writing or modifying any tests.
+
+# Quick Reference
+
+## Three Tiers
+
+1. **Unit tests** (`tests/Unit/`): PHPUnit + Brain Monkey + Mockery. No WordPress loaded. Fast.
+2. **Integration tests** (`tests/Integration/`): PHPUnit + WP_UnitTestCase. Real WordPress + WooCommerce DB.
+3. **E2E tests** (future): Docker Compose with WordPress + MySQL.
+
+## Test Commands
+
+- `composer test:unit` — unit tests only
+- `composer test:integration` — integration tests
+- `composer test:run` — lint + all tests
+
+## Rules
+
+- Every new endpoint must have matching tests
+- Test coverage required BEFORE marking a feature as done
+- Use data providers to combine similar test cases
+- Do not write redundant tests
+- Happy path + auth failures + validation errors + edge cases

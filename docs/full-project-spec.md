@@ -29,25 +29,25 @@ See [architecture.md](architecture.md) for full system diagrams, message flows, 
 
 ## Implementation Status
 
-> Last updated: 2026-02-19
+> Last updated: 2026-02-23
 
 ### Plugin
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Plugin scaffold (bootstrap, autoloader, composer) | Not started | |
-| Auth token generation + storage | Not started | Plain text for MVP |
-| Token auth middleware (Bearer validation) | Not started | |
-| Health endpoint (GET /health) | Not started | Public |
-| Products list endpoint (GET /products) | Not started | MVP |
-| Create product endpoint (POST /products) | Not started | MVP |
+| Plugin scaffold (bootstrap, autoloader, composer) | Done | PSR-4, PHPUnit 13, Brain Monkey 2.7 |
+| Auth token generation + storage | Done | Plain text for MVP |
+| Token auth middleware (Bearer validation) | Done | hash_equals comparison |
+| Health endpoint (GET /health) | Done | Public |
+| Products list endpoint (GET /products) | Done | MVP |
+| Create product endpoint (POST /products) | Done | MVP |
 | Single product endpoint (GET /products/{id}) | Not started | Post-MVP |
 | Update product endpoint (PATCH /products/{id}) | Not started | Post-MVP |
 | Low stock endpoint (GET /products/low-stock) | Not started | Future premium |
 | Recent orders endpoint (GET /orders/recent) | Not started | Future premium |
 | Register callback endpoint (POST /register-callback) | Not started | Post-MVP |
 | Admin settings page | Not started | Post-MVP |
-| Unit tests | Not started | |
+| Unit tests | Done | 30 tests, 119 assertions |
 | Integration tests | Not started | |
 
 ### Router

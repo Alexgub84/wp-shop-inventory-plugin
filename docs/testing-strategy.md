@@ -31,11 +31,10 @@ Test error handling, branching logic, and edge cases. Fast, no WordPress loaded.
 ```php
 <?php
 require_once dirname(__DIR__) . '/vendor/autoload.php';
-
-use Brain\Monkey;
-
-Monkey\setUp();
+require_once __DIR__ . '/Stubs/wordpress.php';
 ```
+
+Stubs file provides class stubs (WP_Error, WP_REST_Request, WP_REST_Response). Brain Monkey handles function mocking — do NOT define WP functions in stubs.
 
 ### Pattern
 

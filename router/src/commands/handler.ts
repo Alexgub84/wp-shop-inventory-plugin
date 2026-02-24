@@ -3,11 +3,23 @@ import type { PluginClient } from '../plugin/types.js'
 import type { SessionManager } from '../session/types.js'
 import { createListProductsAction } from './listProducts.js'
 import { createAddProductAction } from './addProduct.js'
-import { formatMenu, formatUnknownCommand } from '../formatter.js'
+import { getMenuButtons, formatUnknownCommandText } from '../formatter.js'
+import type { ButtonData } from '../greenapi/sender.js'
 
-export interface CommandResult {
+export interface TextResult {
+  type: 'text'
   response: string
 }
+
+export interface ButtonsResult {
+  type: 'buttons'
+  body: string
+  buttons: ButtonData[]
+  header?: string
+  footer?: string
+}
+
+export type CommandResult = TextResult | ButtonsResult
 
 export interface CommandHandler {
   process(chatId: string, text: string): Promise<CommandResult>
@@ -23,6 +35,11 @@ const LIST_ALIASES = new Set(['1', 'list', 'products'])
 const ADD_ALIASES = new Set(['2', 'add', 'new'])
 const MENU_ALIASES = new Set(['3', 'help', 'menu'])
 
+function menuResult(): ButtonsResult {
+  const menu = getMenuButtons()
+  return { type: 'buttons', ...menu }
+}
+
 export function createCommandHandler(deps: CommandHandlerDeps): CommandHandler {
   const { pluginClient, sessionManager } = deps
   const logger = deps.logger ?? createNoopLogger()
@@ -37,28 +54,33 @@ export function createCommandHandler(deps: CommandHandlerDeps): CommandHandler {
     if (session) {
       logger.info({ event: 'session_active', chatId, step: session.step })
       const response = await addAction.handleStep(chatId, text, session)
-      return { response }
+      return { type: 'text', response }
     }
 
     if (LIST_ALIASES.has(normalized)) {
       logger.info({ event: 'command_list', chatId })
       const response = await listAction.execute()
-      return { response }
+      return { type: 'text', response }
     }
 
     if (ADD_ALIASES.has(normalized)) {
       logger.info({ event: 'command_add', chatId })
       const response = addAction.start(chatId)
-      return { response }
+      return { type: 'text', response }
     }
 
     if (MENU_ALIASES.has(normalized)) {
       logger.info({ event: 'command_menu', chatId })
-      return { response: formatMenu() }
+      return menuResult()
     }
 
     logger.info({ event: 'command_unknown', chatId, text: normalized })
-    return { response: formatUnknownCommand() }
+    const menu = getMenuButtons()
+    return {
+      type: 'buttons',
+      ...menu,
+      body: formatUnknownCommandText()
+    }
   }
 
   return { process }

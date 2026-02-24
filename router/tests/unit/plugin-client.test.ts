@@ -1,7 +1,8 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPluginClient } from '../../src/plugin/client.js'
 import { PluginApiError } from '../../src/errors.js'
 import { createMockProduct } from '../mocks/plugin.js'
+import { createMockLogger } from '../mocks/greenapi.js'
 
 function createFetchMock(response: { ok: boolean; status: number; body: unknown }) {
   return vi.fn().mockResolvedValue({
@@ -18,12 +19,18 @@ const config = {
 }
 
 describe('PluginClient', () => {
+  let mockLogger: ReturnType<typeof createMockLogger>
+
+  beforeEach(() => {
+    mockLogger = createMockLogger()
+  })
+
   describe('listProducts', () => {
     it('should fetch products with Bearer auth header', async () => {
       const products = [createMockProduct(), createMockProduct({ id: 2, name: 'Second' })]
       const mockFetch = createFetchMock({ ok: true, status: 200, body: products })
 
-      const client = createPluginClient(config, undefined, mockFetch as unknown as typeof fetch)
+      const client = createPluginClient(config, mockLogger, mockFetch as unknown as typeof fetch)
       const result = await client.listProducts()
 
       expect(result).toHaveLength(2)
@@ -42,7 +49,7 @@ describe('PluginClient', () => {
 
     it('should return empty array when no products', async () => {
       const mockFetch = createFetchMock({ ok: true, status: 200, body: [] })
-      const client = createPluginClient(config, undefined, mockFetch as unknown as typeof fetch)
+      const client = createPluginClient(config, mockLogger, mockFetch as unknown as typeof fetch)
 
       const result = await client.listProducts()
       expect(result).toEqual([])
@@ -54,7 +61,7 @@ describe('PluginClient', () => {
         status: 401,
         body: { code: 'wsi_unauthorized', message: 'Invalid token' }
       })
-      const client = createPluginClient(config, undefined, mockFetch as unknown as typeof fetch)
+      const client = createPluginClient(config, mockLogger, mockFetch as unknown as typeof fetch)
 
       await expect(client.listProducts()).rejects.toThrow(PluginApiError)
       await expect(client.listProducts()).rejects.toMatchObject({ errorCode: 'unauthorized' })
@@ -66,7 +73,7 @@ describe('PluginClient', () => {
         status: 500,
         body: { message: 'Internal Server Error' }
       })
-      const client = createPluginClient(config, undefined, mockFetch as unknown as typeof fetch)
+      const client = createPluginClient(config, mockLogger, mockFetch as unknown as typeof fetch)
 
       await expect(client.listProducts()).rejects.toThrow(PluginApiError)
       await expect(client.listProducts()).rejects.toMatchObject({ errorCode: 'server_error' })
@@ -74,10 +81,47 @@ describe('PluginClient', () => {
 
     it('should throw PluginApiError with network_error on fetch failure', async () => {
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network failed'))
-      const client = createPluginClient(config, undefined, mockFetch as unknown as typeof fetch)
+      const client = createPluginClient(config, mockLogger, mockFetch as unknown as typeof fetch)
 
       await expect(client.listProducts()).rejects.toThrow(PluginApiError)
       await expect(client.listProducts()).rejects.toMatchObject({ errorCode: 'network_error' })
+    })
+
+    it('should log info on start and success', async () => {
+      const products = [createMockProduct()]
+      const mockFetch = createFetchMock({ ok: true, status: 200, body: products })
+      const client = createPluginClient(config, mockLogger, mockFetch as unknown as typeof fetch)
+
+      await client.listProducts()
+
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'plugin_list_products_start' })
+      )
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'plugin_list_products_success', count: 1 })
+      )
+    })
+
+    it('should log error on API failure', async () => {
+      const mockFetch = createFetchMock({ ok: false, status: 401, body: { message: 'Unauthorized' } })
+      const client = createPluginClient(config, mockLogger, mockFetch as unknown as typeof fetch)
+
+      try { await client.listProducts() } catch {}
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'plugin_api_error', statusCode: 401 })
+      )
+    })
+
+    it('should log error on network failure', async () => {
+      const mockFetch = vi.fn().mockRejectedValue(new Error('ECONNREFUSED'))
+      const client = createPluginClient(config, mockLogger, mockFetch as unknown as typeof fetch)
+
+      try { await client.listProducts() } catch {}
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'plugin_network_error' })
+      )
     })
   })
 
@@ -86,7 +130,7 @@ describe('PluginClient', () => {
       const created = { id: 42, name: 'New Widget', sku: 'NW-001', price: '19.99', stock_quantity: 10, status: 'publish' }
       const mockFetch = createFetchMock({ ok: true, status: 201, body: created })
 
-      const client = createPluginClient(config, undefined, mockFetch as unknown as typeof fetch)
+      const client = createPluginClient(config, mockLogger, mockFetch as unknown as typeof fetch)
       const result = await client.createProduct({
         name: 'New Widget',
         regular_price: '19.99',
@@ -108,7 +152,7 @@ describe('PluginClient', () => {
         status: 400,
         body: { code: 'wsi_invalid_product', message: 'Product name is required.' }
       })
-      const client = createPluginClient(config, undefined, mockFetch as unknown as typeof fetch)
+      const client = createPluginClient(config, mockLogger, mockFetch as unknown as typeof fetch)
 
       try {
         await client.createProduct({ name: '', regular_price: '10', stock_quantity: 1 })
@@ -122,11 +166,48 @@ describe('PluginClient', () => {
 
     it('should throw PluginApiError with network_error on fetch failure', async () => {
       const mockFetch = vi.fn().mockRejectedValue(new Error('Connection refused'))
-      const client = createPluginClient(config, undefined, mockFetch as unknown as typeof fetch)
+      const client = createPluginClient(config, mockLogger, mockFetch as unknown as typeof fetch)
 
       await expect(
         client.createProduct({ name: 'Test', regular_price: '10', stock_quantity: 1 })
       ).rejects.toMatchObject({ errorCode: 'network_error' })
+    })
+
+    it('should log info on start and success', async () => {
+      const created = { id: 42, name: 'Widget', sku: 'W-1', price: '10', stock_quantity: 5, status: 'publish' }
+      const mockFetch = createFetchMock({ ok: true, status: 201, body: created })
+      const client = createPluginClient(config, mockLogger, mockFetch as unknown as typeof fetch)
+
+      await client.createProduct({ name: 'Widget', regular_price: '10', stock_quantity: 5 })
+
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'plugin_create_product_start', name: 'Widget' })
+      )
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'plugin_create_product_success', productId: 42 })
+      )
+    })
+
+    it('should log error on API failure', async () => {
+      const mockFetch = createFetchMock({ ok: false, status: 400, body: { message: 'Bad' } })
+      const client = createPluginClient(config, mockLogger, mockFetch as unknown as typeof fetch)
+
+      try { await client.createProduct({ name: 'X', regular_price: '10', stock_quantity: 1 }) } catch {}
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'plugin_api_error', statusCode: 400 })
+      )
+    })
+
+    it('should log error on network failure', async () => {
+      const mockFetch = vi.fn().mockRejectedValue(new Error('ECONNREFUSED'))
+      const client = createPluginClient(config, mockLogger, mockFetch as unknown as typeof fetch)
+
+      try { await client.createProduct({ name: 'X', regular_price: '10', stock_quantity: 1 }) } catch {}
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'plugin_network_error' })
+      )
     })
   })
 })

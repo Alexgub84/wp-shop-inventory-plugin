@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
-  formatMenu,
+  getMenuButtons,
+  formatUnknownCommandText,
+  formatUnregistered,
   formatProductList,
   formatProductCreated,
   formatProductCreateError,
@@ -10,18 +12,48 @@ import {
   formatCancelled,
   formatInvalidPrice,
   formatInvalidStock,
-  formatUnknownCommand,
   formatSessionExpired
 } from '../../src/formatter.js'
 import { createMockProduct } from '../mocks/plugin.js'
 
 describe('formatter', () => {
-  describe('formatMenu', () => {
-    it('should include all menu options', () => {
-      const menu = formatMenu()
-      expect(menu).toContain('1. List products')
-      expect(menu).toContain('2. Add product')
-      expect(menu).toContain('3. Help')
+  describe('getMenuButtons', () => {
+    it('should return body text and three buttons', () => {
+      const menu = getMenuButtons()
+      expect(menu.body).toBeTruthy()
+      expect(menu.buttons).toHaveLength(3)
+    })
+
+    it('should have list, add, help buttons with correct IDs', () => {
+      const menu = getMenuButtons()
+      expect(menu.buttons[0].buttonId).toBe('list')
+      expect(menu.buttons[1].buttonId).toBe('add')
+      expect(menu.buttons[2].buttonId).toBe('help')
+    })
+
+    it('should have a footer', () => {
+      const menu = getMenuButtons()
+      expect(menu.footer).toBeTruthy()
+    })
+  })
+
+  describe('formatUnregistered', () => {
+    it('should pitch the plugin to unregistered users', () => {
+      const msg = formatUnregistered()
+      expect(msg).toContain('Shop Inventory plugin')
+      expect(msg).toContain('WooCommerce')
+    })
+
+    it('should include a plugin link and be friendly', () => {
+      const msg = formatUnregistered()
+      expect(msg).toContain('wordpress.org/plugins')
+      expect(msg).toContain('👋')
+    })
+  })
+
+  describe('formatUnknownCommandText', () => {
+    it('should indicate the input was not understood', () => {
+      expect(formatUnknownCommandText()).toContain("didn't quite get that")
     })
   })
 
@@ -125,12 +157,6 @@ describe('formatter', () => {
 
     it('formatInvalidStock should prompt for valid stock', () => {
       expect(formatInvalidStock()).toContain('Invalid stock')
-    })
-
-    it('formatUnknownCommand should include menu', () => {
-      const result = formatUnknownCommand()
-      expect(result).toContain('didn\'t understand')
-      expect(result).toContain('1. List products')
     })
 
     it('formatSessionExpired should mention expired', () => {

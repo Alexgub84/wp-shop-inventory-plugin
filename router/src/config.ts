@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { ConfigError } from './errors.js'
-import { logger } from './logger.js'
+import { createNoopLogger, type Logger } from './logger.js'
 
 const coerceBooleanFromEnvVar = z
   .union([z.boolean(), z.string()])
@@ -43,7 +43,9 @@ function fieldToEnvVar(field: string): string {
   return mapping[field] || field.toUpperCase()
 }
 
-export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
+export function loadConfig(env: NodeJS.ProcessEnv = process.env, logger?: Logger): Config {
+  const log = logger ?? createNoopLogger()
+
   const result = configSchema.safeParse({
     port: env.PORT,
     logLevel: env.LOG_LEVEL,
@@ -70,10 +72,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       return { field, envVar: envVarName, message: e.message }
     })
 
-    logger.error({ event: 'config_validation_failed', errors })
+    log.error({ event: 'config_validation_failed', errors })
 
     if (missingVars.length > 0) {
-      logger.error({
+      log.error({
         event: 'missing_environment_variables',
         missing: missingVars,
         hint: 'Add these variables to your .env file'
@@ -85,6 +87,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     throw new ConfigError(firstError.message, field)
   }
 
-  logger.info({ event: 'config_loaded', port: result.data.port, logLevel: result.data.logLevel })
+  log.info({ event: 'config_loaded', port: result.data.port, logLevel: result.data.logLevel })
   return result.data
 }

@@ -1,8 +1,9 @@
 import { WebhookError } from '../errors.js'
 import { createNoopLogger, type Logger } from '../logger.js'
 import type { GreenApiSender } from '../greenapi/sender.js'
-import type { CommandHandler } from '../commands/handler.js'
+import type { CommandHandler, CommandResult } from '../commands/handler.js'
 import type { Config } from '../config.js'
+import { formatUnregistered } from '../formatter.js'
 import { incomingMessageSchema, extractMessageContent, type IncomingMessage } from './types.js'
 
 export interface WebhookHandlerDeps {
@@ -14,7 +15,7 @@ export interface WebhookHandlerDeps {
 
 export interface WebhookHandlerResult {
   handled: boolean
-  action?: 'command_processed' | 'ignored_unsupported' | 'ignored_webhook_type' | 'ignored_wrong_number'
+  action?: 'command_processed' | 'ignored_unsupported' | 'ignored_webhook_type' | 'unregistered_replied'
 }
 
 export function createWebhookHandler(deps: WebhookHandlerDeps) {
@@ -29,6 +30,20 @@ export function createWebhookHandler(deps: WebhookHandlerDeps) {
       throw new WebhookError(`Invalid webhook payload: ${result.error.message}`, field)
     }
     return result.data
+  }
+
+  async function sendCommandResult(chatId: string, result: CommandResult): Promise<void> {
+    if (result.type === 'buttons') {
+      await sender.sendButtons({
+        chatId,
+        body: result.body,
+        buttons: result.buttons,
+        header: result.header,
+        footer: result.footer
+      })
+    } else {
+      await sender.sendMessage(chatId, result.response)
+    }
   }
 
   async function handle(body: unknown): Promise<WebhookHandlerResult> {
@@ -51,8 +66,9 @@ export function createWebhookHandler(deps: WebhookHandlerDeps) {
     const expectedChatId = `${config.phoneNumber}@c.us`
 
     if (chatId !== expectedChatId) {
-      logger.warn({ event: 'ignored_wrong_number', chatId, expected: expectedChatId })
-      return { handled: false, action: 'ignored_wrong_number' }
+      logger.warn({ event: 'unregistered_number', chatId, expected: expectedChatId })
+      await sender.sendMessage(chatId, formatUnregistered())
+      return { handled: true, action: 'unregistered_replied' }
     }
 
     const extractedMessage = extractMessageContent(payload)
@@ -68,7 +84,7 @@ export function createWebhookHandler(deps: WebhookHandlerDeps) {
 
     const result = await commandHandler.process(chatId, extractedMessage.content)
 
-    await sender.sendMessage(chatId, result.response)
+    await sendCommandResult(chatId, result)
 
     logger.info({ event: 'command_processed', chatId, handled: true })
     return { handled: true, action: 'command_processed' }

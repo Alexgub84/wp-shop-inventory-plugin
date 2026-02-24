@@ -1,15 +1,38 @@
 import type { Product, CreatedProduct } from './plugin/types.js'
+import type { ButtonData } from './greenapi/sender.js'
 
-export function formatMenu(): string {
+export interface MenuButtonsData {
+  body: string
+  buttons: ButtonData[]
+  footer?: string
+}
+
+export function getMenuButtons(): MenuButtonsData {
+  return {
+    body: '👋 Welcome to Shop Inventory!\nWhat would you like to do?',
+    buttons: [
+      { buttonId: 'list', buttonText: '📦 List Products' },
+      { buttonId: 'add', buttonText: '➕ Add Product' },
+      { buttonId: 'help', buttonText: '❓ Help' }
+    ],
+    footer: 'Tap a button to get started'
+  }
+}
+
+export function formatUnknownCommandText(): string {
+  return "Hmm, I didn't quite get that 🤔"
+}
+
+export function formatUnregistered(): string {
   return [
-    'Welcome to Shop Inventory Bot!',
-    '',
-    'Choose an option:',
-    '1. List products',
-    '2. Add product',
-    '3. Help',
-    '',
-    'Reply with the number of your choice.'
+    "Hey! 👋",
+    "",
+    "Want to manage your shop inventory straight from WhatsApp?",
+    "Just install the Shop Inventory plugin on your WooCommerce store and you're in! 🚀",
+    "",
+    "🔗 https://wordpress.org/plugins/wp-shop-inventory",
+    "",
+    "Already installed? Ask your developer to connect your phone number 😊"
   ].join('\n')
 }
 
@@ -60,10 +83,6 @@ export function formatInvalidPrice(): string {
 
 export function formatInvalidStock(): string {
   return 'Invalid stock. Please enter a whole number (e.g. 50).\n\nSend "cancel" to abort.'
-}
-
-export function formatUnknownCommand(): string {
-  return 'I didn\'t understand that.\n\n' + formatMenu()
 }
 
 export function formatSessionExpired(): string {

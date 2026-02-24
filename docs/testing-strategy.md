@@ -296,3 +296,49 @@ public static function invalidTokenProvider(): array {
 ## Avoid Redundant Tests
 
 Do not write a separate test if its assertions are already covered by another test. Keep tests separate when they have meaningfully different setup or logic.
+
+---
+
+## Logger Testing (Mandatory)
+
+Every module that accepts an injectable logger **must** have tests verifying its log calls. This applies to both the plugin (PHP) and the router (TypeScript).
+
+### Why
+
+Structured logs are the primary observability mechanism for the router in production. Missing or incorrect log events break alerting, debugging, and audit trails. Treating logger calls as part of the module's public contract ensures they don't silently disappear during refactoring.
+
+### Rules
+
+1. **Every `log.info()`, `log.warn()`, and `log.error()` call must have a corresponding test assertion.** Use `expect(mockLogger.info).toHaveBeenCalledWith(expect.objectContaining({ event: '...' }))`.
+2. **Inject a mock logger via DI.** Never rely on the global logger in tests. If a module uses a global logger, refactor it to accept an injectable one.
+3. **Group logger tests in a `describe('logging', ...)` block** at the end of each test file for easy auditing.
+4. **Test the event name and key fields**, not the full log object. Use `expect.objectContaining()` to avoid brittle assertions.
+5. **When adding a new log call to source code, add a matching test in the same PR.** No log call ships without test coverage.
+
+### Router Pattern
+
+```typescript
+import { createMockLogger } from '../mocks/greenapi.js'
+
+let mockLogger: ReturnType<typeof createMockLogger>
+
+beforeEach(() => {
+  mockLogger = createMockLogger()
+})
+
+describe('logging', () => {
+  it('should log info on success', async () => {
+    // ... trigger the action ...
+    expect(mockLogger.info).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'some_event', relevantField: 'value' })
+    )
+  })
+
+  it('should log error on failure', async () => {
+    // ... trigger the failure ...
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'some_error_event' })
+    )
+  })
+})
+```

@@ -17,6 +17,12 @@ export const incomingMessageSchema = z.object({
     }).optional(),
     extendedTextMessageData: z.object({
       text: z.string()
+    }).optional(),
+    templateButtonReplyMessage: z.object({
+      selectedId: z.string(),
+      selectedDisplayText: z.string().optional(),
+      selectedIndex: z.number().optional(),
+      stanzaId: z.string().optional()
     }).optional()
   }),
   idMessage: z.string()
@@ -25,7 +31,7 @@ export const incomingMessageSchema = z.object({
 export type IncomingMessage = z.infer<typeof incomingMessageSchema>
 
 export interface ExtractedMessage {
-  type: 'text'
+  type: 'text' | 'button_reply'
   content: string
 }
 
@@ -42,6 +48,12 @@ export function extractMessageContent(payload: IncomingMessage): ExtractedMessag
     const text = payload.messageData.extendedTextMessageData?.text ?? null
     if (!text) return null
     return { type: 'text', content: text }
+  }
+
+  if (typeMessage === 'templateButtonsReplyMessage' || typeMessage === 'templateButtonReplyMessage') {
+    const selectedId = payload.messageData.templateButtonReplyMessage?.selectedId ?? null
+    if (!selectedId) return null
+    return { type: 'button_reply', content: selectedId }
   }
 
   return null

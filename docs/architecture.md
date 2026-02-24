@@ -156,11 +156,16 @@ Cleanup: sweep every 60 seconds, remove sessions older than 5 minutes.
 
 ```
 wp-shop-inventory-plugin/
+├── Makefile                          # Monorepo test orchestration (make test)
 ├── plugin/                           # WordPress plugin (PHP)
 │   ├── wp-shop-inventory.php
 │   ├── uninstall.php
 │   ├── composer.json
-│   ├── phpunit.xml
+│   ├── phpunit.xml                   # Unit test config
+│   ├── phpunit-integration.xml       # Integration test config
+│   ├── docker-compose.test.yml       # MySQL for integration tests
+│   ├── bin/
+│   │   └── install-wp-tests.sh      # WP test suite + WooCommerce installer
 │   ├── src/
 │   │   ├── Plugin.php
 │   │   ├── Activator.php
@@ -174,7 +179,8 @@ wp-shop-inventory-plugin/
 │   │   └── Services/
 │   │       └── ProductService.php
 │   └── tests/
-│       ├── bootstrap.php
+│       ├── bootstrap.php             # Unit test bootstrap
+│       ├── bootstrap-integration.php # Integration test bootstrap
 │       ├── Unit/
 │       └── Integration/
 │

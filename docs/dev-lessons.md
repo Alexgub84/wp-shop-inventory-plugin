@@ -6,6 +6,36 @@ A log of bugs fixed and problems solved. Updated after fixing bugs or solving no
 
 <!-- Add new entries at the top -->
 
+### [Infra] macOS TMPDIR vs /tmp
+**Date:** 2026-02-24
+**Problem:** Install script used `$TMPDIR` which on macOS resolves to `/var/folders/...`, but the PHPUnit bootstrap defaults to `/tmp/` — files not found
+**Solution:** Hardcode `/tmp` in the install script instead of relying on `$TMPDIR`
+**Prevention:** Never use `$TMPDIR` for paths that must be consistent across scripts; use a fixed directory
+
+### [Test] WP test suite release tags lack PHPUnit 10+ support
+**Date:** 2026-02-24
+**Problem:** Downloading the WP test suite from release tags (e.g. `tags/6.9.1`) included old code calling `PHPUnit\Util\Test::parseTestMethodAnnotations()`, which was removed in PHPUnit 10
+**Solution:** Download the test suite from the `trunk` branch instead of release tags
+**Prevention:** Always use `trunk` for the WP test suite — release tags don't get PHPUnit compatibility backports
+
+### [Deps] PHPUnit 13 incompatible with WP test suite
+**Date:** 2026-02-24
+**Problem:** WordPress test suite + Yoast PHPUnit Polyfills only support up to PHPUnit 9.x; PHPUnit 13 failed at runtime
+**Solution:** Downgraded PHPUnit from 13.0.5 to 9.6.34, added `yoast/phpunit-polyfills` 2.0.5
+**Prevention:** Use PHPUnit 9.6.x for any project that needs the WordPress test suite (WP_UnitTestCase)
+
+### [Deps] PHPUnit 9 uses @dataProvider annotations not attributes
+**Date:** 2026-02-24
+**Problem:** Unit tests used `#[DataProvider('...')]` attributes (PHPUnit 10+ syntax) which PHPUnit 9 ignores, causing "too few arguments" errors
+**Solution:** Replaced `#[DataProvider]` attributes with `@dataProvider` doc-block annotations
+**Prevention:** Use `@dataProvider` annotation syntax while on PHPUnit 9; only switch to attributes after upgrading to PHPUnit 10+
+
+### [Infra] No svn or mysql CLI on macOS
+**Date:** 2026-02-24
+**Problem:** The standard WP test install script uses `svn export` and `mysqladmin`, neither of which is installed on macOS by default
+**Solution:** Download WP test suite via GitHub tarballs (`curl` + `tar`) instead of `svn`; create database via `docker exec` instead of local `mysqladmin`
+**Prevention:** Avoid `svn` and local DB CLI tools in install scripts; use `curl`/`tar` for downloads and `docker exec` for DB operations
+
 ### [Deps] Brain Monkey package name
 **Date:** 2026-02-23
 **Problem:** `brain-wp/brain-monkey` package not found by Composer

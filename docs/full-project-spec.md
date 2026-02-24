@@ -29,13 +29,13 @@ See [architecture.md](architecture.md) for full system diagrams, message flows, 
 
 ## Implementation Status
 
-> Last updated: 2026-02-23
+> Last updated: 2026-02-24
 
 ### Plugin
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Plugin scaffold (bootstrap, autoloader, composer) | Done | PSR-4, PHPUnit 13, Brain Monkey 2.7 |
+| Plugin scaffold (bootstrap, autoloader, composer) | Done | PSR-4, PHPUnit 9.6, Brain Monkey 2.7 |
 | Auth token generation + storage | Done | Plain text for MVP |
 | Token auth middleware (Bearer validation) | Done | hash_equals comparison |
 | Health endpoint (GET /health) | Done | Public |
@@ -48,7 +48,7 @@ See [architecture.md](architecture.md) for full system diagrams, message flows, 
 | Register callback endpoint (POST /register-callback) | Not started | Post-MVP |
 | Admin settings page | Not started | Post-MVP |
 | Unit tests | Done | 30 tests, 119 assertions |
-| Integration tests | Not started | |
+| Integration tests | Done | 6 tests, 22 assertions — Docker MySQL + WP_UnitTestCase |
 
 ### Router
 
@@ -166,8 +166,8 @@ Error: `WP_Error` with appropriate HTTP status code.
 | Language | PHP 8.1+ |
 | Autoloading | PSR-4 via Composer |
 | Namespace | `WSI\` |
-| Testing (unit) | PHPUnit + Brain Monkey + Mockery |
-| Testing (integration) | PHPUnit + WordPress test suite (`WP_UnitTestCase`) |
+| Testing (unit) | PHPUnit 9.6 + Brain Monkey + Mockery |
+| Testing (integration) | PHPUnit 9.6 + WordPress test suite (`WP_UnitTestCase`) + Docker MySQL |
 | Linting | PHP CodeSniffer (WordPress standards) |
 | Dependency versions | Pinned exactly (no `^` or `~`) |
 
@@ -192,12 +192,17 @@ Error: `WP_Error` with appropriate HTTP status code.
 
 ```
 wp-shop-inventory-plugin/
+├── Makefile                              # Monorepo test orchestration (make test)
 ├── plugin/                               # WordPress plugin
 │   ├── wp-shop-inventory.php             # Bootstrap: plugin header, load autoloader, init
 │   ├── uninstall.php                     # Cleanup wp_options on uninstall
 │   ├── composer.json                     # Autoload (PSR-4), dev deps
-│   ├── phpunit.xml                       # PHPUnit configuration
+│   ├── phpunit.xml                       # PHPUnit config (unit tests)
+│   ├── phpunit-integration.xml           # PHPUnit config (integration tests)
+│   ├── docker-compose.test.yml           # MySQL 8.0 for integration tests (port 3307)
 │   ├── .gitignore
+│   ├── bin/
+│   │   └── install-wp-tests.sh          # Downloads WP test suite + WooCommerce, creates test DB
 │   ├── src/                              # PSR-4 root: WSI\ namespace
 │   │   ├── Plugin.php                    # Main class: hooks, init, dependency wiring
 │   │   ├── Activator.php                # On activation: generate token, store in options
@@ -211,7 +216,8 @@ wp-shop-inventory-plugin/
 │   │   └── Services/
 │   │       └── ProductService.php        # Wraps wc_get_products(), product creation
 │   └── tests/
-│       ├── bootstrap.php                 # Test bootstrap (Brain Monkey setup)
+│       ├── bootstrap.php                 # Unit test bootstrap (Brain Monkey setup)
+│       ├── bootstrap-integration.php     # Integration test bootstrap (loads WP + WooCommerce)
 │       ├── Unit/
 │       └── Integration/
 │

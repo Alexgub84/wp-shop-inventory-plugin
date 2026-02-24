@@ -180,7 +180,8 @@ Do not write a separate test if its assertions are already covered by another te
 ## Finalization
 
 1. Write tests for any new or changed functionality
-2. Run validation: `composer test:run` (lint + all tests)
+2. Run validation from repo root: `make test` (runs unit + integration for all components)
+   - Or from `plugin/`: `composer test:run` (unit + integration)
 3. Fix any failures automatically
 4. Ask for user confirmation
 5. Follow the Git Workflow above (commit, push, PR)

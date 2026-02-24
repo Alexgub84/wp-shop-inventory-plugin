@@ -19,9 +19,10 @@
     "scripts": {
         "test": "@test:unit",
         "test:unit": "phpunit --testsuite unit",
-        "test:integration": "phpunit --testsuite integration",
+        "test:integration": "phpunit -c phpunit-integration.xml",
         "test:run": [
-            "@test:unit"
+            "@test:unit",
+            "@test:integration"
         ]
     },
     "config": {
@@ -30,6 +31,7 @@
     "require-dev": {
         "brain/monkey": "2.7.0",
         "mockery/mockery": "1.6.12",
-        "phpunit/phpunit": "13.0.5"
+        "phpunit/phpunit": "9.6.34",
+        "yoast/phpunit-polyfills": "2.0.5"
     }
 }

@@ -95,7 +95,9 @@ class ProductsControllerTest extends TestCase
         $this->assertSame(456, $response->get_data()['id']);
     }
 
-    #[DataProvider('missingFieldProvider')]
+    /**
+     * @dataProvider missingFieldProvider
+     */
     public function test_create_product_rejects_missing_fields(
         array $params,
         string $expected_message_fragment,

@@ -10,11 +10,16 @@ Both projects live in a single repository. Shared docs and config at the root.
 
 ```
 wp-shop-inventory-plugin/
+├── Makefile                          # Monorepo test orchestration (make test)
 ├── plugin/                           # WordPress plugin (PHP)
 │   ├── wp-shop-inventory.php         # Bootstrap: plugin header, autoloader, init
 │   ├── uninstall.php                 # Cleanup wp_options on uninstall
 │   ├── composer.json                 # PSR-4 autoload, dev deps
-│   ├── phpunit.xml
+│   ├── phpunit.xml                   # PHPUnit config (unit tests)
+│   ├── phpunit-integration.xml       # PHPUnit config (integration tests)
+│   ├── docker-compose.test.yml       # MySQL 8.0 for integration tests (port 3307)
+│   ├── bin/
+│   │   └── install-wp-tests.sh      # Downloads WP test suite + WooCommerce, creates test DB
 │   ├── src/
 │   │   ├── Plugin.php                # Main class: hooks, init, DI wiring
 │   │   ├── Activator.php            # Generate token on activation
@@ -28,7 +33,8 @@ wp-shop-inventory-plugin/
 │   │   └── Services/
 │   │       └── ProductService.php    # Wraps wc_get_products(), product creation
 │   └── tests/
-│       ├── bootstrap.php
+│       ├── bootstrap.php             # Unit test bootstrap (Brain Monkey)
+│       ├── bootstrap-integration.php # Integration test bootstrap (WP + WooCommerce)
 │       ├── Unit/
 │       └── Integration/
 │
@@ -113,7 +119,7 @@ wp-shop-inventory-plugin/
 - Premium/free tier gating
 - Admin settings page (token displayed in CLI/logs on activation)
 - Router registration callback
-- Docker E2E tests
+- Full E2E tests (router + plugin together via Docker)
 - CI/CD pipeline
 - HTTPS enforcement
 
@@ -144,6 +150,7 @@ wp-shop-inventory-plugin/
 | 19 | Router | Server (Fastify) + App (DI wiring) + Entry point | Done |
 | 20 | Router | Unit tests (config, commands, formatter, plugin-client, session, webhook) | Done |
 | 21 | Router | E2E tests (full Fastify inject flow) | Done |
+| 22 | Plugin | Integration tests (Docker MySQL + WP_UnitTestCase) | Done |
 
 ---
 

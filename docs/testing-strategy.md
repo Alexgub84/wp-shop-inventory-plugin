@@ -8,11 +8,12 @@ Three levels: unit, integration, E2E. Each has its own dependency strategy.
 
 | Script | Purpose |
 | --- | --- |
-| `composer test` | Run all tests |
+| `make test` | Monorepo-wide: runs all plugin tests (unit + integration) from repo root |
+| `make test-plugin` | Plugin tests only (unit + integration) |
 | `composer test:unit` | Unit tests only (fast, no WordPress) |
-| `composer test:integration` | Integration tests (needs WP test DB) |
+| `composer test:integration` | Integration tests (needs Docker MySQL + WP test suite) |
+| `composer test:run` | Unit + integration tests sequentially |
 | `composer lint` | PHP CodeSniffer with WordPress standards |
-| `composer test:run` | Lint + all tests (CI and pre-commit) |
 
 ---
 
@@ -97,64 +98,91 @@ class TokenAuthTest extends TestCase {
 
 ## Integration Tests (`tests/Integration/`)
 
-Full request/response with real WordPress and WooCommerce. Validates REST API, database operations, and business logic.
+Full request/response with real WordPress and WooCommerce. Validates REST API, database operations, and business logic end-to-end.
+
+### Infrastructure
+
+Integration tests require a running MySQL instance and the WordPress test suite:
+
+- **Docker MySQL:** `plugin/docker-compose.test.yml` runs MySQL 8.0 on port 3307 with `tmpfs` for speed
+- **Install script:** `plugin/bin/install-wp-tests.sh` downloads WordPress core, WP test suite (from trunk), and WooCommerce to `/tmp/`
+- **Bootstrap:** `plugin/tests/bootstrap-integration.php` loads the real WP test suite, activates WooCommerce and the plugin, and runs `WC_Install::install()`
+- **PHPUnit config:** `plugin/phpunit-integration.xml` uses the integration bootstrap (separate from unit test config)
+
+### Setup (one-time after Docker is running)
+
+```bash
+cd plugin
+docker compose -f docker-compose.test.yml up -d
+bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1:3307
+```
 
 ### Tools
 
-- PHPUnit + WordPress test suite (`WP_UnitTestCase`)
-- WooCommerce test helpers for creating products
-- Real MySQL database (local or Docker)
+- PHPUnit 9.6 + Yoast PHPUnit Polyfills
+- WordPress test suite (`WP_UnitTestCase`) from trunk branch
+- WooCommerce loaded as a real plugin
+- Docker MySQL 8.0
 
 ### Pattern
 
 ```php
 namespace WSI\Tests\Integration;
 
-use WP_UnitTestCase;
 use WP_REST_Request;
+use WP_REST_Server;
 
-class ProductsApiTest extends WP_UnitTestCase {
-    private string $valid_token = 'test-token-12345';
-    
+class ProductsApiTest extends \WP_UnitTestCase {
+    private string $token = 'test-integration-token-12345';
+
     public function setUp(): void {
         parent::setUp();
-        update_option('wsi_auth_token_hash', wp_hash_password($this->valid_token));
+
+        global $wp_rest_server;
+        $wp_rest_server = new WP_REST_Server();
+        do_action('rest_api_init');
+
+        update_option('wsi_auth_token', $this->token);
     }
-    
-    public function test_list_products_returns_published_products(): void {
+
+    public function tearDown(): void {
+        global $wp_rest_server;
+        $wp_rest_server = null;
+        parent::tearDown();
+    }
+
+    public function test_list_products_returns_seeded_products(): void {
         $product = new \WC_Product_Simple();
         $product->set_name('Test Widget');
+        $product->set_sku('WDG-001');
+        $product->set_description('A test widget');
         $product->set_regular_price('19.99');
+        $product->set_manage_stock(true);
         $product->set_stock_quantity(50);
         $product->set_status('publish');
         $product->save();
-        
+
         $request = new WP_REST_Request('GET', '/wsi/v1/products');
-        $request->set_header('Authorization', 'Bearer ' . $this->valid_token);
-        
+        $request->set_header('Authorization', 'Bearer ' . $this->token);
+
         $response = rest_do_request($request);
-        
-        $this->assertEquals(200, $response->get_status());
+
+        $this->assertSame(200, $response->get_status());
         $data = $response->get_data();
         $this->assertCount(1, $data);
-        $this->assertEquals('Test Widget', $data[0]['name']);
-    }
-    
-    public function test_rejects_request_without_token(): void {
-        $request = new WP_REST_Request('GET', '/wsi/v1/products');
-        $response = rest_do_request($request);
-        $this->assertEquals(401, $response->get_status());
+        $this->assertSame('Test Widget', $data[0]['name']);
     }
 }
 ```
 
 ### Rules
 
-- Use `WP_UnitTestCase` as base class (provides WP test DB, auto-cleanup)
+- Use `WP_UnitTestCase` as base class (provides WP test DB, auto-cleanup via transaction rollback)
+- Reset the REST server in `setUp()` via `global $wp_rest_server` to ensure fresh route registration
+- Auth uses `wsi_auth_token` (plain text, MVP) — set via `update_option()` in `setUp()`
 - Create test products via WooCommerce classes (`WC_Product_Simple`)
-- Use `rest_do_request()` for REST API testing (no real HTTP)
+- Use `rest_do_request()` for REST API testing (no real HTTP, dispatches internally)
 - Each test method is isolated (WP_UnitTestCase rolls back DB changes)
-- Set up auth tokens in `setUp()` for authenticated tests
 
 ---
 
@@ -242,7 +270,7 @@ Each module must test:
 
 ## Combine Similar Tests
 
-Use data providers to combine tests that follow the same pattern:
+Use `@dataProvider` annotations (PHPUnit 9 style) to combine tests that follow the same pattern. Do NOT use `#[DataProvider]` attributes (PHPUnit 10+ only).
 
 ```php
 /**

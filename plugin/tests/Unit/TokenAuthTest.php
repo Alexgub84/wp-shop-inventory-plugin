@@ -35,7 +35,9 @@ class TokenAuthTest extends TestCase
         $this->assertTrue($result);
     }
 
-    #[DataProvider('rejectedTokenProvider')]
+    /**
+     * @dataProvider rejectedTokenProvider
+     */
     public function test_rejects_invalid_auth(
         ?string $header_value,
         bool $should_call_get_option

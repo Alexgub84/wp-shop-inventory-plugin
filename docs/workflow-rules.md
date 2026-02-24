@@ -128,6 +128,17 @@ Follow Conventional Commits:
 2. If an existing issue covers the bug, use that issue number
 3. The PR must include `Closes #XX` to auto-close the bug issue on merge
 
+## Updating Documentation
+
+When completing work that changes any of the following, update the corresponding docs:
+
+- **README.md (root)** — Update when: new features are marked done, API endpoints change, stack changes, getting-started steps change, monorepo structure changes, or roadmap items are completed. The root README is the public face on GitHub — keep it accurate.
+- **docs/full-project-spec.md** — Update the implementation status table when features are completed or specs change.
+- **docs/architecture.md** — Update when system design, component responsibilities, or architectural decisions change.
+- **docs/workflow-rules.md** — Update when workflow or coding standards change.
+- **docs/testing-strategy.md** — Update when testing patterns or commands change.
+- **docs/dev-lessons.md** — Update after every bug fix or non-obvious problem (see below).
+
 ## Dev Lessons Log
 
 After fixing any bug, configuration mistake, or non-obvious problem, add an entry to `docs/dev-lessons.md`:

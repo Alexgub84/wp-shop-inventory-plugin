@@ -3,37 +3,12 @@ import type { FastifyInstance } from 'fastify'
 import { createApp, type App } from '../../src/app.js'
 import { createMockPluginClient, createMockProduct } from '../mocks/plugin.js'
 import { createMockSender } from '../mocks/greenapi.js'
-import type { Config } from '../../src/config.js'
-
-const PHONE = '972501234567'
-const CHAT_ID = `${PHONE}@c.us`
-
-function createTestConfig(): Config {
-  return {
-    port: 0,
-    logLevel: 'silent',
-    mockMode: true,
-    sessionTimeoutMs: 300000,
-    dbPath: ':memory:',
-    phoneNumber: PHONE,
-    shopUrl: 'https://test-shop.com',
-    authToken: 'test-token',
-    greenApi: { instanceId: 'test', token: 'test' }
-  }
-}
-
-function createWebhookPayload(text: string) {
-  return {
-    typeWebhook: 'incomingMessageReceived',
-    instanceData: { idInstance: 123, wid: 'bot@c.us' },
-    senderData: { chatId: CHAT_ID, sender: CHAT_ID },
-    messageData: {
-      typeMessage: 'textMessage',
-      textMessageData: { textMessage: text }
-    },
-    idMessage: `MSG-${Date.now()}-${Math.random()}`
-  }
-}
+import {
+  CHAT_ID,
+  createTestConfig,
+  createWebhookPayload,
+  createButtonReplyPayload
+} from './helpers.js'
 
 describe('E2E: Router Webhook Flow', () => {
   let app: App

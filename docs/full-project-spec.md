@@ -68,6 +68,7 @@ See [architecture.md](architecture.md) for full system diagrams, message flows, 
 | Server (Fastify) + App (DI wiring) | Done | Factory-function DI pattern |
 | Unit tests (70 tests) | Done | Fake services via mocks/ |
 | E2E tests (8 tests) | Done | Fastify inject |
+| Dockerfile | Done | Multi-stage build (Node 20) |
 | AI-powered conversation | Not started | Post-MVP |
 | Multi-user phone registry | Not started | Post-MVP |
 | Phone verification flow | Not started | Post-MVP |
@@ -223,6 +224,8 @@ wp-shop-inventory-plugin/
 │
 ├── router/                               # Node.js router service
 │   ├── package.json
+│   ├── Dockerfile                        # Multi-stage Docker build
+│   ├── .dockerignore
 │   ├── .env.example
 │   ├── src/
 │   │   ├── index.js                      # Express server, webhook listener
@@ -238,6 +241,16 @@ wp-shop-inventory-plugin/
 │   │   └── session.js                    # In-memory conversation state
 │   └── tests/
 │       └── unit/
+│
+├── e2e/                                  # Full-stack E2E tests (Docker)
+│   ├── docker-compose.yml                # MySQL + WordPress + WP-Setup + Router
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── vitest.config.ts
+│   ├── run.sh                            # Orchestration: start, wait, test, teardown
+│   ├── README.md
+│   └── tests/
+│       └── full-flow.test.ts             # Full integration tests
 │
 ├── docs/                                 # Shared project documentation
 │   ├── full-project-spec.md

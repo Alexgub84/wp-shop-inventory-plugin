@@ -1,0 +1,10 @@
+node_modules
+dist
+data
+tests
+.env
+.env.*
+*.db
+*.md
+.git
+.gitignore

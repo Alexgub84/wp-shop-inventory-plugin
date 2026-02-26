@@ -8,12 +8,14 @@ Three levels: unit, integration, E2E. Each has its own dependency strategy.
 
 | Script | Purpose |
 | --- | --- |
-| `make test` | Monorepo-wide: runs all plugin tests (unit + integration) from repo root |
+| `make test` | Monorepo-wide: runs plugin + router unit/integration tests |
 | `make test-plugin` | Plugin tests only (unit + integration) |
-| `composer test:unit` | Unit tests only (fast, no WordPress) |
-| `composer test:integration` | Integration tests (needs Docker MySQL + WP test suite) |
-| `composer test:run` | Unit + integration tests sequentially |
-| `composer lint` | PHP CodeSniffer with WordPress standards |
+| `make test-router` | Router tests only (lint + unit + e2e with mocks) |
+| `make test-e2e` | Full-stack E2E: Docker Compose boots everything, vitest runs |
+| `composer test:unit` | Plugin unit tests only (fast, no WordPress) |
+| `composer test:integration` | Plugin integration tests (needs Docker MySQL + WP test suite) |
+| `composer test:run` | Plugin unit + integration tests sequentially |
+| `cd e2e && bash run.sh` | Full E2E: start Docker, wait, test, tear down |
 
 ---
 
@@ -214,48 +216,51 @@ class WooCommerceMock {
 
 ---
 
-## E2E Tests (Future -- Docker)
+## E2E Tests (`e2e/`)
 
-Docker Compose with WordPress + MySQL + WooCommerce + the plugin. Real HTTP requests.
+Full-stack tests that boot the entire system (MySQL + WordPress/WooCommerce + plugin + router) via Docker Compose. Tests run on the host using vitest and make real HTTP requests.
 
-```yaml
-services:
-  mysql:
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: test
-      MYSQL_DATABASE: wordpress_test
-    ports:
-      - "3307:3306"
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 2s
-      timeout: 5s
-      retries: 10
+### Infrastructure
 
-  wordpress:
-    image: wordpress:latest
-    environment:
-      WORDPRESS_DB_HOST: mysql
-      WORDPRESS_DB_NAME: wordpress_test
-      WORDPRESS_DB_USER: root
-      WORDPRESS_DB_PASSWORD: test
-    ports:
-      - "8080:80"
-    depends_on:
-      mysql:
-        condition: service_healthy
-    volumes:
-      - .:/var/www/html/wp-content/plugins/wp-shop-inventory
+Docker Compose (`e2e/docker-compose.yml`) runs four services:
+
+1. **mysql** — MySQL 8.0 with tmpfs for speed
+2. **wordpress** — WordPress 6 + PHP 8.2, plugin mounted as a bind volume
+3. **wp-setup** — One-shot WP-CLI container: installs WP core, WooCommerce, activates the plugin, sets a known auth token
+4. **router** — Built from `router/Dockerfile`, configured with `MOCK_MODE=true` (no real Green API)
+
+### Running
+
+```bash
+# From repo root
+make test-e2e
+
+# Or directly
+cd e2e && bash run.sh
 ```
+
+The `run.sh` script handles: install deps, start Docker, wait for readiness (up to 180s), run vitest, tear down.
+
+### What's tested
+
+- Plugin health endpoint (WooCommerce active, plugin version)
+- Router health endpoint
+- Plugin auth (rejects missing/wrong tokens, accepts valid token)
+- Full webhook flow: menu command → router processes and responds
+- Full webhook flow: list products through router → plugin → WooCommerce
+- Full webhook flow: add product via multi-step conversation → verify product created in WooCommerce
+- Cancel mid-flow and resume
+- Unregistered phone number handling
+- Invalid payload rejection
 
 ### E2E Rules
 
-- Use different ports from dev (3307 for MySQL, 8080 for WordPress)
-- No persistent volumes -- ephemeral
+- Ports: 3000 (router), 8080 (WordPress). No persistent volumes — ephemeral
 - Tear down existing containers before starting
-- Use real HTTP calls (`curl` or `fetch`)
-- 180s timeout on setup to accommodate builds
+- Real HTTP calls via native `fetch`
+- 180s timeout on setup to accommodate Docker builds
+- Auth token: `test-e2e-token-12345` (set by wp-setup, used by router and tests)
+- Router runs with `MOCK_MODE=true` — no Green API calls, messages are logged only
 
 ---
 

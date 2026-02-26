@@ -1,0 +1,101 @@
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: test
+      MYSQL_DATABASE: wordpress
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  wordpress:
+    image: wordpress:6-php8.2-apache
+    volumes:
+      - wp-data:/var/www/html
+      - ../plugin:/var/www/html/wp-content/plugins/wp-shop-inventory
+    environment:
+      WORDPRESS_DB_HOST: mysql
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: test
+    ports:
+      - "8080:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /var/www/html/wp-config.php && test -f /var/www/html/wp-includes/version.php"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  wp-setup:
+    image: wordpress:cli
+    volumes:
+      - wp-data:/var/www/html
+      - ../plugin:/var/www/html/wp-content/plugins/wp-shop-inventory
+    depends_on:
+      wordpress:
+        condition: service_healthy
+    user: "33:33"
+    environment:
+      WORDPRESS_DB_HOST: mysql
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: test
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        echo "Waiting for database..."
+        retries=30
+        i=0
+        while [ $$i -lt $$retries ]; do
+          if wp db check --quiet 2>/dev/null; then
+            break
+          fi
+          i=$$((i + 1))
+          echo "  Database not ready, retry $$i/$$retries..."
+          sleep 2
+        done
+        set -e
+        wp core install --url=http://wordpress --title="E2E Test Shop" --admin_user=admin --admin_password=admin --admin_email=admin@test.com --skip-email
+        wp rewrite structure '/%postname%/' --hard
+        wp plugin install woocommerce --activate
+        wp plugin activate wp-shop-inventory
+        wp option update wsi_auth_token test-e2e-token-12345
+        wp rewrite flush --hard
+        echo "WordPress setup complete."
+
+  router:
+    build:
+      context: ../router
+    environment:
+      PORT: "3000"
+      LOG_LEVEL: info
+      MOCK_MODE: "true"
+      PHONE_NUMBER: "972501234567"
+      SHOP_URL: http://wordpress
+      AUTH_TOKEN: test-e2e-token-12345
+      GREEN_API_INSTANCE_ID: test
+      GREEN_API_TOKEN: test
+      DB_PATH: /tmp/router.db
+      SESSION_TIMEOUT_MS: "300000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      wp-setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 5s
+
+volumes:
+  wp-data:

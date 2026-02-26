@@ -83,13 +83,9 @@ describe('E2E Edge Cases: Router Webhook Flow', () => {
 
       expect(response.statusCode).toBe(200)
       expect(response.json().handled).toBe(true)
-      expect(sender.sendButtons).toHaveBeenCalledWith(
-        expect.objectContaining({
-          chatId: CHAT_ID,
-          buttons: expect.arrayContaining([
-            expect.objectContaining({ buttonId: 'list' })
-          ])
-        })
+      expect(sender.sendMessage).toHaveBeenCalledWith(
+        CHAT_ID,
+        expect.stringContaining('List products')
       )
     })
   })
@@ -167,15 +163,9 @@ describe('E2E Edge Cases: Router Webhook Flow', () => {
       })
 
       expect(response.json().handled).toBe(true)
-      expect(sender.sendButtons).toHaveBeenCalledWith(
-        expect.objectContaining({
-          chatId: CHAT_ID,
-          buttons: expect.arrayContaining([
-            expect.objectContaining({ buttonId: 'list' }),
-            expect.objectContaining({ buttonId: 'add' }),
-            expect.objectContaining({ buttonId: 'help' })
-          ])
-        })
+      expect(sender.sendMessage).toHaveBeenCalledWith(
+        CHAT_ID,
+        expect.stringContaining('List products')
       )
     })
 
@@ -187,7 +177,10 @@ describe('E2E Edge Cases: Router Webhook Flow', () => {
       })
 
       expect(response.json().handled).toBe(true)
-      expect(sender.sendButtons).toHaveBeenCalled()
+      expect(sender.sendMessage).toHaveBeenCalledWith(
+        CHAT_ID,
+        expect.stringContaining('List products')
+      )
     })
   })
 
@@ -200,7 +193,10 @@ describe('E2E Edge Cases: Router Webhook Flow', () => {
       })
 
       expect(response.json().handled).toBe(true)
-      expect(sender.sendButtons).toHaveBeenCalled()
+      expect(sender.sendMessage).toHaveBeenCalledWith(
+        CHAT_ID,
+        expect.stringContaining('List products')
+      )
     })
 
     it('should handle "List" (mixed case)', async () => {
@@ -229,23 +225,19 @@ describe('E2E Edge Cases: Router Webhook Flow', () => {
     })
   })
 
-  describe('button reply for help', () => {
-    it('should show menu when help button is pressed', async () => {
+  describe('help command', () => {
+    it('should show menu when user sends help', async () => {
       const response = await server.inject({
         method: 'POST',
         url: '/webhook',
-        payload: createButtonReplyPayload('help')
+        payload: createWebhookPayload('help')
       })
 
       expect(response.statusCode).toBe(200)
       expect(response.json().handled).toBe(true)
-      expect(sender.sendButtons).toHaveBeenCalledWith(
-        expect.objectContaining({
-          chatId: CHAT_ID,
-          buttons: expect.arrayContaining([
-            expect.objectContaining({ buttonId: 'list' })
-          ])
-        })
+      expect(sender.sendMessage).toHaveBeenCalledWith(
+        CHAT_ID,
+        expect.stringContaining('List products')
       )
     })
   })
@@ -615,7 +607,6 @@ describe('E2E Edge Cases: Router Webhook Flow', () => {
       await server.inject({ method: 'POST', url: '/webhook', payload: createWebhookPayload('20') })
 
       sender.sendMessage.mockClear()
-      sender.sendButtons.mockClear()
 
       const response = await server.inject({
         method: 'POST',
@@ -624,13 +615,9 @@ describe('E2E Edge Cases: Router Webhook Flow', () => {
       })
 
       expect(response.json().handled).toBe(true)
-      expect(sender.sendButtons).toHaveBeenCalledWith(
-        expect.objectContaining({
-          chatId: CHAT_ID,
-          buttons: expect.arrayContaining([
-            expect.objectContaining({ buttonId: 'list' })
-          ])
-        })
+      expect(sender.sendMessage).toHaveBeenCalledWith(
+        CHAT_ID,
+        expect.stringContaining('List products')
       )
     })
 

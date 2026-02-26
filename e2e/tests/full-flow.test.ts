@@ -150,7 +150,7 @@ describe('Full Stack E2E', () => {
   })
 
   describe('webhook flow: unregistered phone', () => {
-    it('replies to messages from unknown phone numbers', async () => {
+    it('ignores messages from unknown phone numbers', async () => {
       const res = await fetch(`${ROUTER_URL}/webhook`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -168,8 +168,8 @@ describe('Full Stack E2E', () => {
 
       const body = await res.json()
       expect(body.ok).toBe(true)
-      expect(body.handled).toBe(true)
-      expect(body.action).toBe('unregistered_replied')
+      expect(body.handled).toBe(false)
+      expect(body.action).toBe('ignored_wrong_number')
     })
   })
 

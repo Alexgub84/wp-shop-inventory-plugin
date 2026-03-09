@@ -74,3 +74,4 @@ jobs:
       - name: Run E2E tests
         run: bash run.sh
         working-directory: e2e
+
